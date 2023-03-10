@@ -1,1 +1,4 @@
 .idea/
+envs/
+venv/
+goodreads-tools/cached/

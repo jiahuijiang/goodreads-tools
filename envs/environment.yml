@@ -1,5 +1,0 @@
-name: goodreads-tools
-dependencies:
-  - python=3.9
-  - requests=2.28.1
-  - bs4
