@@ -2,10 +2,6 @@
 # if the rating is similar (1 point apart), score +1
 # if the rating is different, score -(difference-1)
 def calculate_similarity(books_in_common):
-    similarity = 0
-    books_both_read = 0
-    counted = 0
-
     def both_love(book):
         return book["their_rating"] >= 4 and book["my_rating"] >= 4
 
@@ -39,5 +35,7 @@ def calculate_similarity(books_in_common):
 
     return {
         "trust_their_likes": trust_their_likes_scores / their_liked_book_count if their_liked_book_count >= 5 else None,
-        "like_their_dislikes": like_their_dislikes / their_disliked_book_count if their_disliked_book_count >= 3 else None
+        "trust_their_likes_count": their_liked_book_count,
+        "like_their_dislikes": like_their_dislikes / their_disliked_book_count if their_disliked_book_count >= 3 else None,
+        "like_their_dislikes_count": their_disliked_book_count
     }

@@ -7,7 +7,7 @@ from goodreads import Goodreads
 from environment import cached_friends_path
 
 
-def get_all_friends_id(force_reload=True):
+def get_all_friends_id(force_reload=False):
     print("Getting all friends...")
     if force_reload is True or os.path.exists(cached_friends_path) is False:
         friends = {}
