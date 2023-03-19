@@ -13,7 +13,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--force_reload_friends", action="store_true")
-    parser.add_argument("--force_reload_compare_results", action="store_true")
+    parser.add_argument("--force_reload_books", action="store_true")
     parser.add_argument("--compare_algorithm", default="collaborative_filtering",
                         choices=["collaborative_filtering", "top_friends"])
     args = parser.parse_args()
@@ -24,22 +24,23 @@ def main():
         print(f"Found {len(all_friends)} friends.")
 
     all_friend_compare_results = compare_results.compare_with_users(
-        all_friends.keys(), force_reload=args.force_reload_compare_results, verbose=verbose)
-    all_books = get_all_books(all_friend_compare_results)
+        all_friends.keys(), force_reload=args.force_reload_books, verbose=verbose)
 
     if args.compare_algorithm == "top_friends":
         print("Top friends recommendation results:")
-        recommendations = get_top_friends_recommendations(all_friend_compare_results, all_books, verbose=verbose)
+        recommendations = get_top_friends_recommendations(all_friend_compare_results, verbose=verbose)
         for book_partial_url, score, title in sorted(recommendations, key=lambda item: item[1], reverse=True)[:recommend_length]:
             if score > 0:
                 print(f"{score:.1f} - {title} - {get_full_url(book_partial_url)}")
 
     elif args.compare_algorithm == "collaborative_filtering":
         print("Collaborative filtering recommendation results:")
-        collaborative_filtering_predicted_top_similar_books = predict_rating_with_collaborative_filtering(all_friend_compare_results)
-        for book_partial_url, predicted_rating in sorted(collaborative_filtering_predicted_top_similar_books.items(), key=lambda item: item[1], reverse=True)[:recommend_length]:
+        collaborative_filtering_predicted_top_similar_books = predict_rating_with_collaborative_filtering(
+            all_friend_compare_results, all_friends)
+        for result in sorted(collaborative_filtering_predicted_top_similar_books, key=lambda item: item.get("predicted_rating"), reverse=True)[:recommend_length]:
+            partial_url, title, predicted_rating = result.get("partial_url"), result.get("title"), result.get("predicted_rating")
             if predicted_rating >= 4.0:
-                print(f"{predicted_rating:.1f} - {all_books.get(book_partial_url)} - {get_full_url(book_partial_url)}")
+                print(f"{predicted_rating:.1f} - {title} - {get_full_url(partial_url)}")
 
 
 def get_all_books(all_friend_compare_results):

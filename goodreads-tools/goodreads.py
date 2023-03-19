@@ -19,3 +19,7 @@ class Goodreads:
 
 def get_full_url(partial_url):
     return "https://www.goodreads.com" + partial_url
+
+
+def get_my_id():
+    return os.environ.get('GOODREADS_UID')

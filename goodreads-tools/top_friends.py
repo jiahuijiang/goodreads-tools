@@ -4,7 +4,8 @@ from get_friend_books import get_friends_top_books
 import similarity_calculator
 
 
-def get_recommendations(all_friend_compare_results, all_friends, verbose=False):
+def get_recommendations(all_friend_compare_results, verbose=False):
+    all_friends = [compare_result.get("friend_id") for compare_result in all_friend_compare_results]
     friend_score = calculate_similarity_into_score(all_friend_compare_results)
 
     similarity_in_likes_of_relevant_friends = calculate_similarity_in_likes(friend_score, all_friends)
