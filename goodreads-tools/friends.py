@@ -4,16 +4,18 @@ import random
 import time
 from bs4 import BeautifulSoup
 from goodreads import Goodreads
-from environment import cached_friends_path
+from environment import cached_friends_path, cached_friends_dir
 
 
-def get_all_friends_id(force_reload=False):
-    print("Getting all friends...")
+def get_all_friends_id(force_reload=False, verbose=False):
+    if verbose is True or force_reload is True:
+        print("Getting all friends...")
     if force_reload is True or os.path.exists(cached_friends_path) is False:
         friends = {}
         page_no = 1
         while True:
-            print("Loading page " + str(page_no) + "...", end='\r')
+            if verbose is True or force_reload is True:
+                print("Loading page " + str(page_no) + "...", end='\r')
             friend_ids_in_page = get_friends_page(page_no)
             if not friend_ids_in_page:
                 break
@@ -34,6 +36,8 @@ def load_from_cache():
 
 
 def save_to_cache(friends):
+    if not os.path.exists(cached_friends_dir):
+        os.makedirs(cached_friends_dir)
     with open(cached_friends_path, 'w') as f:
         json.dump(friends, f)
 

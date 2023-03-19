@@ -16,3 +16,6 @@ class Goodreads:
         response = requests.get(url, headers=self.headers)
         return response.content
 
+
+def get_full_url(partial_url):
+    return "https://www.goodreads.com" + partial_url

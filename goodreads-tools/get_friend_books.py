@@ -8,21 +8,26 @@ from rating_parser import rating_by_comment
 goodreads = Goodreads()
 
 
-def get_friends_top_books(user_ids, force_reload=False):
-    print(f"Getting top books for {len(user_ids)} users...")
+def get_friends_top_books(user_ids, force_reload=False, verbose=False):
+    if force_reload is True or verbose is True:
+        print(f"Getting top books for {len(user_ids)} users...")
     if not os.path.exists(cached_top_book_dir):
         os.makedirs(cached_top_book_dir)
 
     top_books = {}
     for index, user_id in enumerate(user_ids):
-        print(f"Getting top books for user {index + 1}/{len(user_ids)}...", end='\r')
+        if force_reload is True or verbose is True:
+            print(f"Getting top books for user {index + 1}/{len(user_ids)}...", end='\r')
         top_books[user_id] = get_friend_top_books(user_id, force_reload)
-    print("Getting top books for users completed.")
+
+    if force_reload is True or verbose is True:
+        print("Getting top books for users completed.")
     return top_books
 
 
-def get_friend_top_books(user_id, force_reload=False):
-    print(f"Getting top books for user {user_id}...")
+def get_friend_top_books(user_id, force_reload=False, verbose=False):
+    if force_reload is True or verbose is True:
+        print(f"Getting top books for user {user_id}...")
     if force_reload is True or os.path.exists(cached_top_book_path(user_id)) is False:
         top_books = parse_top_books(user_id)
         save_to_cache(user_id, top_books)
@@ -57,7 +62,7 @@ def parse_top_books(user_id):
                             .find("td", {"class": "field title"})\
                             .find("a")
                         top_books.append({
-                            "url": get_full_url(book_title_and_link["href"]),
+                            "partial_url": book_title_and_link["href"],
                             "title": book_title_and_link["title"],
                             "rating": their_rating
                         })
@@ -66,10 +71,6 @@ def parse_top_books(user_id):
             print(book_review)
             raise e
     return top_books
-
-
-def get_full_url(partial_url):
-    return "https://www.goodreads.com" + partial_url
 
 
 def save_to_cache(user_id, top_books):

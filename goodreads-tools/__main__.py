@@ -1,61 +1,54 @@
 import friends
-import goodreads
-import os
 import compare_results
-import similarity_calculator
-from get_top_books import get_friends_top_books
+from goodreads import get_full_url
+from collaborative_filtering import predict_rating as predict_rating_with_collaborative_filtering
+from top_friends import get_recommendations as get_top_friends_recommendations
+import argparse
+
+
+recommend_length = 10
 
 
 def main():
-    all_friends = friends.get_all_friends_id(force_reload=False)
-    print(f"Found {len(all_friends)} friends.")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--force_reload_friends", action="store_true")
+    parser.add_argument("--force_reload_compare_results", action="store_true")
+    parser.add_argument("--compare_algorithm", default="collaborative_filtering",
+                        choices=["collaborative_filtering", "top_friends"])
+    args = parser.parse_args()
+    verbose = args.verbose
 
-    friend_compare_results = compare_results.compare_with_users(all_friends.keys(), force_reload=False)
-    friend_score = calculate_similarity_into_score(friend_compare_results)
+    all_friends = friends.get_all_friends_id(force_reload=args.force_reload_friends, verbose=verbose)
+    if verbose:
+        print(f"Found {len(all_friends)} friends.")
 
-    similarity_in_likes_of_relevant_friends = calculate_similarity_in_likes(friend_score, all_friends)
-    similarity_in_dislikes_of_relevant_friends = calculate_similarity_in_dislikes(friend_score, all_friends)
+    all_friend_compare_results = compare_results.compare_with_users(
+        all_friends.keys(), force_reload=args.force_reload_compare_results, verbose=verbose)
+    all_books = get_all_books(all_friend_compare_results)
 
-    all_relevant_friends = \
-        set(similarity_in_likes_of_relevant_friends.keys()) | set(similarity_in_dislikes_of_relevant_friends.keys())
-    friend_top_books = get_friends_top_books(all_relevant_friends, force_reload=False)
+    if args.compare_algorithm == "top_friends":
+        print("Top friends recommendation results:")
+        recommendations = get_top_friends_recommendations(all_friend_compare_results, all_books, verbose=verbose)
+        for book_partial_url, score, title in sorted(recommendations, key=lambda item: item[1], reverse=True)[:recommend_length]:
+            if score > 0:
+                print(f"{score:.1f} - {title} - {get_full_url(book_partial_url)}")
 
-    compute_recommendations(friend_top_books, similarity_in_likes_of_relevant_friends)
-
-
-def calculate_similarity_into_score(friend_compare_results):
-    friend_score = {}
-    for friend_compare_result in friend_compare_results:
-        similarity = similarity_calculator.calculate_similarity(friend_compare_result.get("books_in_common"))
-        if similarity is not None:
-            friend_score[friend_compare_result.get("friend_id")] = similarity
-    print(f"Calculated similarity scores for {len(friend_score)} friends.\n")
-    return friend_score
-
-
-def calculate_similarity_in_likes(friend_score, all_friends):
-    print("Trust their recommendations:")
-    similarity_in_likes = {friend_id: scores.get("trust_their_likes")
-                                 for friend_id, scores in friend_score.items()
-                                 if scores.get("trust_their_likes") is not None}
-    for friend_id, similarity in sorted(similarity_in_likes.items(), key=lambda item: item[1], reverse=True):
-        print(f"{similarity} {all_friends.get(friend_id)}"
-              f" - {friend_score.get(friend_id).get('trust_their_likes_count')} books")
-    return similarity_in_likes
+    elif args.compare_algorithm == "collaborative_filtering":
+        print("Collaborative filtering recommendation results:")
+        collaborative_filtering_predicted_top_similar_books = predict_rating_with_collaborative_filtering(all_friend_compare_results)
+        for book_partial_url, predicted_rating in sorted(collaborative_filtering_predicted_top_similar_books.items(), key=lambda item: item[1], reverse=True)[:recommend_length]:
+            if predicted_rating >= 4.0:
+                print(f"{predicted_rating:.1f} - {all_books.get(book_partial_url)} - {get_full_url(book_partial_url)}")
 
 
-def calculate_similarity_in_dislikes(friend_score, all_friends):
-    print("\nConsider books they don't like:")
-    dissimilarity_in_dislikes = {friend_id: scores.get("like_their_dislikes")
-                                 for friend_id, scores in friend_score.items()
-                                 if scores.get("like_their_dislikes") is not None}
-    if len(dissimilarity_in_dislikes) == 0:
-        print("No friends in this category :-P")
-    else:
-        for friend_id, similarity in sorted(dissimilarity_in_dislikes.items(), key=lambda item: item[1], reverse=True):
-            print(f"{similarity} {all_friends.get(friend_id)}"
-                  f" - {friend_score.get(friend_id).get('like_their_dislikes_count')} books")
-    return dissimilarity_in_dislikes
+def get_all_books(all_friend_compare_results):
+    all_books = {}
+    for friend_compare_result in all_friend_compare_results:
+        for book in friend_compare_result.get("books_in_common"):
+            all_books[book.get("partial_url")] = book.get("title")
+    return all_books
+
 
 
 if __name__ == '__main__':
